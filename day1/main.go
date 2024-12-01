@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"slices"
 	"strings"
 
 	"aoc/util"
@@ -16,7 +15,7 @@ func main() {
 
 func mainErr(r io.Reader) error {
 	var lefts []int
-	var rights []int
+	rights := map[int]int{}
 
 	s := bufio.NewScanner(r)
 	for s.Scan() {
@@ -37,20 +36,15 @@ func mainErr(r io.Reader) error {
 		}
 
 		lefts = append(lefts, left)
-		rights = append(rights, right)
+		rights[right]++
 	}
-
-	slices.Sort(lefts)
-	slices.Sort(rights)
 
 	var score int
 
 	for i := range len(lefts) {
-		diff := lefts[i] - rights[i]
-		if diff < 0 {
-			diff = -diff
-		}
-		score += diff
+		leftNum := lefts[i]
+		leftOccurences := rights[leftNum]
+		score += (leftNum * leftOccurences)
 	}
 
 	fmt.Println("result:", score)
