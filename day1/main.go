@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"strings"
 
 	"aoc/util"
 )
@@ -17,14 +15,7 @@ func mainErr(r io.Reader) error {
 	var lefts []int
 	rights := map[int]int{}
 
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		line := s.Text()
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
+	for line := range util.AllTrimmedLines(r) {
 		var left int
 		var right int
 		n, err := fmt.Sscanf(line, "%d %d", &left, &right)
