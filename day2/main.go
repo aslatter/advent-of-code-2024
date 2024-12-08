@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -47,6 +48,19 @@ func mainErr(r io.Reader) error {
 type report []int
 
 func isSafeReport(r report) bool {
+	if isReportStrictlySafe(r) {
+		return true
+	}
+	for i := range r {
+		rr := slices.Delete(slices.Clone(r), i, i+1)
+		if isReportStrictlySafe(rr) {
+			return true
+		}
+	}
+	return false
+}
+
+func isReportStrictlySafe(r report) bool {
 	var isIncreasing bool
 	if r[1] > r[0] {
 		isIncreasing = true
