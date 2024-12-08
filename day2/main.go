@@ -27,10 +27,6 @@ func mainErr(r io.Reader) error {
 			}
 			r = append(r, n)
 		}
-		_, err := fmt.Sscanf(line, "%d %d %d %d %d", &r[0], &r[1], &r[2], &r[3], &r[4])
-		if err != nil {
-			return fmt.Errorf("parsing line %q: %s", line, err)
-		}
 
 		isSafe := isSafeReport(r)
 		if isSafe {
