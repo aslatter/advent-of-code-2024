@@ -31,18 +31,45 @@ func mainErr(r io.Reader) error {
 	// with 'x' increasing to the right and 'y' increasing as we go down.
 	for p := range input.AllPoints() {
 		// the target word is 'XMAS', but we can find it forwards or backwards.
-		if p.c != 'X' && p.c != 'S' {
+		if p.c != 'A' {
 			continue
 		}
-		var trialWords []string
-		trialWords = append(trialWords, input.East(p))
-		trialWords = append(trialWords, input.South(p))
-		trialWords = append(trialWords, input.SouthEast(p))
-		trialWords = append(trialWords, input.SouthWest(p))
-		for _, w := range trialWords {
-			if w == "XMAS" || w == "SAMX" {
-				result++
-			}
+
+		/**
+
+		Once we find an 'A' we extract the 'corners'
+		arround the 'A', going clockwise.
+
+		Valid inputs are:
+
+		M M
+		 A
+		S S
+
+		S M
+		 A
+		S M
+
+		S S
+		 A
+		M M
+
+		M S
+		 A
+		M S
+
+		These correspond to the "corner strings":
+		 MMSS
+		 SMMS
+		 SSMM
+		 MSSM
+
+		**/
+
+		c := input.Corners(p)
+		switch c {
+		case "MMSS", "SMMS", "SSMM", "MSSM":
+			result++
 		}
 	}
 
@@ -90,66 +117,20 @@ func (p *puzzle) AllPoints() iter.Seq[point] {
 	}
 }
 
-func (p *puzzle) South(pos point) string {
-	var r []byte
-	r = append(r, pos.c)
-	if pos.y == p.height-1 {
-		return string(r)
+// return the corners around the position, clockwise
+// starting from the upper-left.
+func (p *puzzle) Corners(pos point) string {
+	if pos.x == 0 || pos.x == p.width-1 {
+		return ""
 	}
-	maxY := pos.y + 3
-	if maxY > p.height-1 {
-		maxY = p.height - 1
+	if pos.y == 0 || pos.y == p.height-1 {
+		return ""
 	}
-	for i := pos.y + 1; i <= maxY; i++ {
-		r = append(r, p.raw[i][pos.x])
-	}
-	return string(r)
-}
 
-func (p *puzzle) East(pos point) string {
-	var r []byte
-	r = append(r, pos.c)
-	if pos.x == p.width-1 {
-		return string(r)
-	}
-	maxX := pos.x + 3
-	if maxX > p.width-1 {
-		maxX = p.width - 1
-	}
-	for j := pos.x + 1; j <= maxX; j++ {
-		r = append(r, p.raw[pos.y][j])
-	}
-	return string(r)
-}
-
-func (p *puzzle) SouthEast(pos point) string {
-	var r []byte
-	r = append(r, pos.c)
-	maxDelta := 3
-	if pos.x+maxDelta > p.width-1 {
-		maxDelta = p.width - 1 - pos.x
-	}
-	if pos.y+maxDelta > p.height-1 {
-		maxDelta = p.height - 1 - pos.y
-	}
-	for d := 1; d <= maxDelta; d++ {
-		r = append(r, p.raw[pos.y+d][pos.x+d])
-	}
-	return string(r)
-}
-
-func (p *puzzle) SouthWest(pos point) string {
-	var r []byte
-	r = append(r, pos.c)
-	maxDelta := 3
-	if pos.x-maxDelta < 0 {
-		maxDelta = pos.x
-	}
-	if pos.y+maxDelta > p.height-1 {
-		maxDelta = p.height - 1 - pos.y
-	}
-	for d := 1; d <= maxDelta; d++ {
-		r = append(r, p.raw[pos.y+d][pos.x-d])
-	}
-	return string(r)
+	return string([]byte{
+		p.raw[pos.y-1][pos.x-1], // upper left
+		p.raw[pos.y-1][pos.x+1], // upper right
+		p.raw[pos.y+1][pos.x+1], // lower right
+		p.raw[pos.y+1][pos.x-1], // lower left
+	})
 }
