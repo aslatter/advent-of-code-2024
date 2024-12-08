@@ -30,7 +30,7 @@ func mainErr(r io.Reader) error {
 	// loop over all positions in the puzzle. (0,0) is the top-left of the input,
 	// with 'x' increasing to the right and 'y' increasing as we go down.
 	for p := range input.AllPoints() {
-		// the target word is 'XMAS', but we can find it forwards or backwards.
+		// find all patterns like the word "MAS" in a diagonal cross.
 		if p.c != 'A' {
 			continue
 		}
