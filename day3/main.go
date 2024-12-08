@@ -13,7 +13,7 @@ func main() {
 }
 
 func mainErr(r io.Reader) error {
-	rx := regexp.MustCompile(`mul\((\d+),(\d+)\)`)
+	rx := regexp.MustCompile(`mul\((\d+),(\d+)\)|do\(\)|don't\(\)`)
 
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -21,10 +21,24 @@ func mainErr(r io.Reader) error {
 	}
 
 	var result int
+	enabled := true
 
 	for _, match := range rx.FindAllStringSubmatch(string(data), -1) {
+		switch match[0] {
+		case "do()":
+			enabled = true
+			continue
+		case "don't()":
+			enabled = false
+			continue
+		}
+
 		if len(match) != 3 {
 			return fmt.Errorf("unexpected number of matches in %v", match)
+		}
+
+		if !enabled {
+			continue
 		}
 
 		fmt.Printf("match info: %+v\n", match)
