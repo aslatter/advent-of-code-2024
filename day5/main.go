@@ -52,11 +52,16 @@ func mainErr(r io.Reader) error {
 			pages = append(pages, p)
 		}
 
-		if !updateFollowsRules(rules, pages) {
+		// grab rules applicable to current update
+		subRules := rules.subRules(pages)
+
+		if updateFollowsRules(subRules, pages) {
 			continue
 		}
 
-		middleOfBatch := pages[len(pages)/2]
+		sorted := subRules.topoSort(pages)
+
+		middleOfBatch := sorted[len(sorted)/2]
 		result += middleOfBatch
 	}
 
@@ -66,13 +71,6 @@ func mainErr(r io.Reader) error {
 }
 
 func updateFollowsRules(r *rules, update []int) bool {
-	// we ignore rules which concern pages not in the update.
-	// so we need to know which pages are in the update.
-	inUpdate := map[int]bool{}
-	for _, p := range update {
-		inUpdate[p] = true
-	}
-
 	// in order to track if a dependency is satisfied we need
 	// to track which pages we've seen.
 	seen := map[int]bool{}
@@ -81,9 +79,6 @@ func updateFollowsRules(r *rules, update []int) bool {
 	// rules
 	for _, p := range update {
 		for preReqPage := range r.deps[p] {
-			if !inUpdate[preReqPage] {
-				continue
-			}
 			if !seen[preReqPage] {
 				return false
 			}
@@ -113,4 +108,65 @@ func (r *rules) add(p1, p2 int) {
 		r.deps[p2] = nestedMap
 	}
 	nestedMap[p1] = true
+}
+
+// subRules returns a set of rules which pertain to the subset
+// of pages passed-in.
+func (r *rules) subRules(pages []int) *rules {
+	seen := map[int]bool{}
+	for _, p := range pages {
+		seen[p] = true
+	}
+
+	subRules := newRules()
+	for p2, s := range r.deps {
+		if !seen[p2] {
+			continue
+		}
+		for p1 := range s {
+			if !seen[p1] {
+				continue
+			}
+			subRules.add(p1, p2)
+		}
+	}
+
+	return subRules
+}
+
+func (r *rules) topoSort(pages []int) []int {
+	var result []int
+	processed := map[int]bool{}
+
+	// pop pages off the front of 'pages'
+	// add them to 'result' if deps are not met, or to the back of the list of they are
+
+	for len(pages) > 0 {
+		// we really shouldn't use a slice as a FIFO queue, but
+		// this should be okay in practice.
+		nextP := pages[0]
+		pages = pages[1:]
+
+		satisfied := true
+		for dep := range r.deps[nextP] {
+			if !processed[dep] {
+				satisfied = false
+				break
+			}
+		}
+
+		if !satisfied {
+			// try it again later
+			if len(pages) == 0 {
+				// uh oh - trivially unsatisfiable
+				panic("oops")
+			}
+			pages = append(pages, nextP)
+			continue
+		}
+		result = append(result, nextP)
+		processed[nextP] = true
+	}
+
+	return result
 }
