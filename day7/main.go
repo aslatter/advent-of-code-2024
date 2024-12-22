@@ -68,23 +68,28 @@ func validEquation(e equation) bool {
 			test: 0
 			inputs: []
 
-		is trivially valid. Then, we have two inductive rules to build
+		is trivially valid. Then, we have three inductive rules to build
 		up valid equations.
 
 		Addition:
 
-		 {x+n, n:xs} is valid if {x, xs} is valid
+			{x+n, n:xs} is valid if {x, xs} is valid
 
 		Multiplication:
 
-		 {x*n, n:xs} is valid if {x, xs} is valid
+			{x*n, n:xs} is valid if {x, xs} is valid
+
+		Concatenation:
+
+			{x || n, n:xs} is valid if {x, xs} is valid
 
 		We can work these rules backwards starting from a proposed
 		solution:
 
-		 - {n, x:xs} is valid if {n-x, xs} is valid
-		 - {n, x:xs} is valid if {n/x, xs} is valid (and if n%x == 0)
-		 - {0, []} is valid
+			- {n, x:xs} is valid if {n-x, xs} is valid
+			- {n, x:xs} is valid if {n/x, xs} is valid (and if n%x == 0)
+			- (n, x:xs) is valid if {unconcat(n,x), xs} is valid
+			- {0, []} is valid
 
 		(in the implementation we reverse the operands to making popping
 		values off slightly easier in Go)
@@ -111,8 +116,30 @@ func validEquationParts(test int, reversedInputs []int) bool {
 	}
 
 	// try multiplication
-	if test%nextArg != 0 {
+	if test%nextArg == 0 && validEquationParts(test/nextArg, nextInputs) {
+		return true
+	}
+
+	// try concatenation
+	prefix, canUnconcat := unconcat(test, nextArg)
+	if !canUnconcat {
 		return false
 	}
-	return validEquationParts(test/nextArg, nextInputs)
+	return validEquationParts(prefix, nextInputs)
+}
+
+func unconcat(x int, n int) (int, bool) {
+	xStr := strconv.Itoa(x)
+	nStr := strconv.Itoa(n)
+
+	if !strings.HasSuffix(xStr, nStr) {
+		return 0, false
+	}
+
+	prefixStr := strings.TrimSuffix(xStr, nStr)
+	prefix, err := strconv.Atoi(prefixStr)
+	if err != nil {
+		return 0, false
+	}
+	return prefix, true
 }
